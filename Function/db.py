@@ -154,8 +154,8 @@ def DEF_CHANGE_MESSAGER_STATUS(CHATID):
         if RESPONCE.status_code == 200:
             INBOUNDS = json.loads(RESPONCE.text)
             FOUND = False
-            if "trojan" in INBOUNDS :
-                for ITEM in INBOUNDS["trojan"]:
+            if "shadowsocks" in INBOUNDS :
+                for ITEM in INBOUNDS["shadowsocks"]:
                     if "Holderbot" in ITEM["tag"]:
                         FOUND = True
                         break
