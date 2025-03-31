@@ -52,7 +52,7 @@ Holderbot - это легковесный и простой бот, изнача
 Пожалуйста, используйте следующую команду для установки на свой сервер:
 
 ```
-cd && cd .. && rm -f holderbot.sh* || true && sudo apt install && sudo apt-get install libjpeg-dev && wget https://raw.githubusercontent.com/erfjab/holderbot/main/holderbot.sh && chmod +x holderbot.sh && ./holderbot.sh
+cd && cd .. && rm -f holderbot.sh* || true && sudo apt install && sudo apt-get install libjpeg-dev && wget https://raw.githubusercontent.com/sirvan1133/holderbot/main/holderbot.sh && chmod +x holderbot.sh && ./holderbot.sh
 ```
 
 # Как использовать бот? #
