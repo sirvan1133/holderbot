@@ -26,15 +26,15 @@
 
 ## install
 ```
-sudo bash -c "$(curl -sL https://github.com/Alfred-13/alfred-holderbot/raw/main/holderbot.sh)"
+sudo bash -c "$(curl -sL https://github.com/sirvan1133/holderbot/raw/main/holderbot.sh)"
 ```
 ## restart
 ```
-sudo bash -c "$(curl -sL https://github.com/Alfred-13/alfred-holderbot/raw/main/restart.sh)"
+sudo bash -c "$(curl -sL https://github.com/sirvan1133/holderbot/raw/main/restart.sh)"
 ```
 ## uninstall
 ```
-sudo bash -c "$(curl -sL https://github.com/Alfred-13/alfred-holderbot/raw/main/uninstall.sh)"
+sudo bash -c "$(curl -sL https://github.com/sirvan1133/holderbot/raw/main/uninstall.sh)"
 ```
 
 # برای استفاده notice از اینباند زیر استفاده کنید 
