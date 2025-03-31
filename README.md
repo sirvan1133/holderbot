@@ -42,19 +42,15 @@ sudo bash -c "$(curl -sL https://github.com/sirvan1133/holderbot/raw/main/uninst
 
 ```
 {
-      "tag": "Holderbot",
-      "listen": "0.0.0.0",
-      "port": 6969,
-      "protocol": "trojan",
-      "settings": {
-        "clients": []
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "tcpSettings": {},
-        "security": "none"
-      }
-    },
+  "tag": "Holderbot",
+  "listen": "0.0.0.0",
+  "port": 2222,
+  "protocol": "shadowsocks",
+  "settings": {
+    "clients": [],
+    "network": "tcp,udp"
+  }
+}
 ```
 
 
