@@ -23,10 +23,10 @@ with app :
                 if RESPONCE.status_code == 200 :
                     RESPONCE_DATA = RESPONCE.json()
                     for USER in RESPONCE_DATA["users"] :
-                        if not USER["inbounds"] == {'trojan': ['Holderbot']} :
+                        if not USER["inbounds"] == {'shadowsocks': ['Holderbot']} :
                             USERNAME = USER["username"]
                             URL = f"{PANEL_DOMAIN}/api/user/{USERNAME}"
-                            DATA = {"proxies":{"trojan":{}},"inbounds" : {'trojan': ['Holderbot']}}
+                            DATA = {"proxies":{"shadowsocks":{}},"inbounds" : {'shadowsocks': ['Holderbot']}}
                             RESPONCE = requests.put(url=URL , json=DATA , headers=PANEL_TOKEN , verify=False)
                             if RESPONCE.status_code == 200 :
                                 app.send_message(chat_id=BOSS_CHATID , text=f"<b>✅ (Checker) Boss! user <code>{USERNAME}</code> is expired,\nI have set the messages.</b>" , parse_mode=enums.ParseMode.HTML , disable_notification=True)
