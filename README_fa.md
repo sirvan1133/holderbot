@@ -1,4 +1,5 @@
 ![Example Image](holderbotcover.png)
+</p>
 نسخه ویرایش شده و بروز شده 
 <p align="center">
 (Added by <a href="https://github.com/leokeuo">leokeuo</a> ❤️) 
