@@ -57,18 +57,7 @@ async def holderbot(client: Client, message: Message) :
             elif MESSAGE_TEXT == "💬 Help" :
                 TEXT = "<b>Hello boss, It seems you've encountered an issue! Don't worry, first check the <a href='https://github.com/sirvan1133/holderbot/wiki'>Github Wiki</a> or <a href='https://t.me/ErfjabHolderbot'>Telegram channel</a>. If your problem persists, open an <a href='https://github.com/sirvan1133/holderbot/issues'>issue on Github</a> so that my developer can respond to you promptly.\n\nAdditionally, a file containing my logs has been sent to you, which my developer needs for debugging and resolving the issue. Thank you for your cooperation, boss.</b>"
                 await client.send_message(chat_id=MESSAGE_CHATID , text=TEXT , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML , disable_web_page_preview=True)
-                log_file = "nohup.out"
-if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
-    await client.send_document(
-        chat_id=MESSAGE_CHATID,
-        document=log_file,
-        file_name="holderlogs.txt",
-        caption=f'<b>{datetime.now().strftime("%d/%m/%Y, %H:%M")}</b>',
-        parse_mode=enums.ParseMode.HTML
-    )
-else:
-    print("⚠️ Log file is empty, skipping send_document")
-
+                await client.send_document(chat_id=MESSAGE_CHATID , document="nohup.out" , file_name="holderlogs.txt" , caption=f'<b>{datetime.now().strftime("%d/%m/%Y, %H:%M")}</b>' , parse_mode=enums.ParseMode.HTML )
 
             elif MESSAGE_TEXT == "🖼 QR Code" :
                 TEXT = "<b>Please send your link.</b>"
