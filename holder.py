@@ -12,9 +12,12 @@ from Function.users import *
 from Function.nodes import *
 from Function.create import *
 from Function.stase import *
+from Function.myfeatures import *
+
+DEF_FEATURES_INIT()
 
 from datetime import datetime
-import re , os
+import re , os , asyncio
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -25,6 +28,33 @@ app = Client(
     api_id=26410400,
     api_hash="408bf51732560cb81a0e32533b858cbf",
     bot_token=DEF_GET_BOT_TOKEN()) #from db , bot table
+
+
+async def DEF_RUN_PROGRESS(client, chatid, wait_msg, func, *args):
+    """Run a blocking func(*args, progress_cb) in a thread while editing
+    `wait_msg` every ~2s with the live progress. Returns func's result."""
+    progress = {"done": 0, "total": 0}
+
+    def cb(done, total):
+        progress["done"] = done
+        progress["total"] = total
+
+    task = asyncio.create_task(asyncio.to_thread(func, *args, cb))
+    last = -1
+    while not task.done():
+        await asyncio.sleep(2)
+        d, t = progress["done"], progress["total"]
+        if t and d != last:
+            last = d
+            pct = int(d * 100 / t) if t else 0
+            try:
+                await client.edit_message_text(
+                    chatid, wait_msg.id,
+                    f"<b>⏳️ Progress: {d}/{t}  ({pct}%)</b>",
+                    parse_mode=enums.ParseMode.HTML)
+            except Exception:
+                pass
+    return await task
 
 
 @app.on_message(filters.private)
@@ -109,7 +139,41 @@ async def holderbot(client: Client, message: Message) :
             elif MESSAGE_TEXT == "🎖 Notice" :
                 await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>Welcome to the Messages section! This feature has been added with sponsorship the <a href='https://t.me/GrayServer'>Gray</a> collection.❤️ You can visit the Gray collection channel and bot for purchasing servers on an hourly and monthly basis, with a wide variety of locations and specifications, accompanied by clean IPs at the lowest prices.\n\nTo utilize this feature, you first need to create an inbound according to the tutorial on GitHub Wiki or the Telegram channel tutorial for Holderbot. Then, in the host setting section of that inbound, write down the texts you desire to be displayed to the user upon completion of the configuration update.\n\nYour Messages is <code>{DEF_GET_MESSAGE_STATUS(MESSAGE_CHATID)}</code></b>" , reply_markup=KEYBOARD_MESSAGES , parse_mode=enums.ParseMode.HTML , disable_web_page_preview=True )
                 UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"message | wait to select command")
-                                
+
+            elif MESSAGE_TEXT == "💰 Billing" :
+                WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ in progress...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                KEYBOARD = await asyncio.to_thread(KEYBOARD_BILLING_ADMINS, MESSAGE_CHATID)
+                await client.send_message(chat_id=MESSAGE_CHATID, text="<b>👤 Please select an admin:</b>", reply_markup=KEYBOARD, parse_mode=enums.ParseMode.HTML)
+                await WAIT.delete()
+                UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"billing | select admin")
+
+            elif MESSAGE_TEXT == "🛠 Protocol" :
+                WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ in progress...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                KEYBOARD = await asyncio.to_thread(KEYBOARD_PROTO_ADMINS, MESSAGE_CHATID)
+                await client.send_message(chat_id=MESSAGE_CHATID, text="<b>🛠 Protocol management\n\n👤 Select an admin (or all admins):</b>", reply_markup=KEYBOARD, parse_mode=enums.ParseMode.HTML)
+                await WAIT.delete()
+                UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"protocol | select admin")
+
+            elif MESSAGE_TEXT == "📅 Give Date" :
+                WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ in progress...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                KEYBOARD = await asyncio.to_thread(KEYBOARD_DATE_ADMINS, MESSAGE_CHATID)
+                await client.send_message(chat_id=MESSAGE_CHATID, text="<b>📅 Give expire date to time-unlimited users\n\n👤 Select an admin:</b>", reply_markup=KEYBOARD, parse_mode=enums.ParseMode.HTML)
+                await WAIT.delete()
+                UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"date | select admin")
+
+            elif MESSAGE_TEXT == "♾ Unlimited" :
+                WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ in progress...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                KEYBOARD = await asyncio.to_thread(KEYBOARD_UNLIMITED_ADMINS, MESSAGE_CHATID)
+                await client.send_message(chat_id=MESSAGE_CHATID, text="<b>♾ Find unlimited users\n\n👤 Select an admin (or all admins):</b>", reply_markup=KEYBOARD, parse_mode=enums.ParseMode.HTML)
+                await WAIT.delete()
+                UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"unlimited | select admin")
+
+            elif MESSAGE_TEXT == "🔄 Reset Alert" :
+                STATUS = DEF_RESET_ALERT_STATUS()
+                emoji = "🟢 on" if STATUS == "on" else "🔴 off"
+                await client.send_message(chat_id=MESSAGE_CHATID, text=f"<b>🔄 Reset traffic alert is {emoji}</b>\n\n<b>When a user's traffic is reset, you'll get a notification.</b>", reply_markup=KEYBOARD_RESET_ALERT(STATUS), parse_mode=enums.ParseMode.HTML)
+                UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"reset | toggle")
+
             else :
                 if MESSAGE_TEXT == "🧨" or ("boss of one") in MESSAGE_TEXT or "set the messages." in MESSAGE_TEXT or "(Checker)" in MESSAGE_TEXT :
                     return
@@ -126,6 +190,180 @@ async def holderbot(client: Client, message: Message) :
                 if CHECK_STEP == "qrcode | wait to send link" :
                     QRCODE_IMG = DEF_CREATE_QRCODE(MESSAGE_TEXT)
                     await client.send_photo(chat_id=MESSAGE_CHATID , photo=QRCODE_IMG,caption=f"<pre>{MESSAGE_TEXT}</pre>" , reply_markup=KEYBOARD_HOME)
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+
+            elif CHECK_STEP.startswith("billing") :
+                if CHECK_STEP == "billing | select admin" :
+                    # expects "bill: ADMINNAME"
+                    if MESSAGE_TEXT.startswith("bill: ") :
+                        ADMIN = MESSAGE_TEXT[len("bill: "):].strip()
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>👤 Admin :</b> <code>{ADMIN}</code>\n\n<b>🔢 Send the start point (number or exact username).\nExample: 100 or user101</b>" , reply_markup=KEYBOARD_CANCEL , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID , f"billing | start {ADMIN}")
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick an admin from the list.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+                elif CHECK_STEP.startswith("billing | start ") :
+                    ADMIN = CHECK_STEP[len("billing | start "):].strip()
+                    WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ calculating...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                    RES = await asyncio.to_thread(DEF_BILLING_CALC, MESSAGE_CHATID, ADMIN, MESSAGE_TEXT.strip())
+                    if "error" in RES :
+                        TEXT = f"<b>❌ {RES['error']}</b>"
+                    else :
+                        TEXT = (f"<b>📊 Billing summary</b>\n\n"
+                                f"<b>👤 Admin :</b> <code>{RES['admin']}</code>\n"
+                                f"<b>📍 From :</b> <code>{RES['from_user']}</code> (#{RES['from_idx']})\n"
+                                f"<b>📍 To :</b> <code>{RES['to_user']}</code> (#{RES['to_idx']})\n"
+                                f"<b>👥 Count :</b> <code>{RES['count']}</code>\n\n"
+                                f"<b>📤 Allocated :</b> <code>{RES['allocated_gb']} GB</code>\n"
+                                f"<b>📥 Used :</b> <code>{RES['used_gb']} GB</code>\n"
+                                f"<b>💧 Left :</b> <code>{RES['left_gb']} GB</code>")
+                    await client.send_message(chat_id=MESSAGE_CHATID , text=TEXT , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                    await WAIT.delete()
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+
+            elif CHECK_STEP.startswith("protocol") :
+                # Step A: pick admin
+                if CHECK_STEP == "protocol | select admin" :
+                    if MESSAGE_TEXT == "🌐 All admins" :
+                        ADMIN = "*all*"
+                    elif MESSAGE_TEXT.startswith("padmin: ") :
+                        ADMIN = MESSAGE_TEXT[len("padmin: "):].strip()
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick an admin.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+                        return
+                    await client.send_message(chat_id=MESSAGE_CHATID , text="<b>👥 Apply to which group?</b>" , reply_markup=KEYBOARD_PROTO_GROUP , parse_mode=enums.ParseMode.HTML)
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID , f"protocol | select group {ADMIN}")
+
+                # Step B: pick group
+                elif CHECK_STEP.startswith("protocol | select group ") :
+                    ADMIN = CHECK_STEP[len("protocol | select group "):].strip()
+                    if MESSAGE_TEXT == "🟢 Active + OnHold" :
+                        GROUP = "active_onhold"
+                    elif MESSAGE_TEXT == "🕰 Expired" :
+                        GROUP = "expired"
+                    elif MESSAGE_TEXT == "🪫 Limited" :
+                        GROUP = "limited"
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick a group.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+                        return
+                    WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ loading protocols...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                    KEYBOARD, _ = await asyncio.to_thread(KEYBOARD_PROTOCOLS, MESSAGE_CHATID)
+                    await client.send_message(chat_id=MESSAGE_CHATID, text="<b>🛠 Pick protocol\n\n➕ = add | ➖ = remove</b>", reply_markup=KEYBOARD, parse_mode=enums.ParseMode.HTML)
+                    await WAIT.delete()
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID , f"protocol | select proto {ADMIN} {GROUP}")
+
+                # Step C: pick protocol + action
+                elif CHECK_STEP.startswith("protocol | select proto ") :
+                    PARTS = CHECK_STEP[len("protocol | select proto "):].strip().split(" ")
+                    ADMIN = PARTS[0]
+                    GROUP = PARTS[1]
+                    if "proto: " in MESSAGE_TEXT :
+                        ACTION = "add" if MESSAGE_TEXT.startswith("➕") else "remove"
+                        PROTO = MESSAGE_TEXT.split("proto: ", 1)[1].strip()
+                        STATUSES = {"active_onhold": ("active","on_hold"), "expired": ("expired",), "limited": ("limited",)}[GROUP]
+                        ADMIN_ARG = None if ADMIN == "*all*" else ADMIN
+                        WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ counting target users...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                        COUNT = await asyncio.to_thread(DEF_PROTOCOL_COUNT_TARGETS, MESSAGE_CHATID, STATUSES, ADMIN_ARG, PROTO, ACTION)
+                        action_txt = "ADD ➕" if ACTION == "add" else "REMOVE ➖"
+                        admin_txt = "All admins" if ADMIN == "*all*" else ADMIN
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>⚠️ Confirm</b>\n\n<b>Admin :</b> <code>{admin_txt}</code>\n<b>Group :</b> <code>{GROUP}</code>\n<b>Action :</b> {action_txt}\n<b>Protocol :</b> <code>{PROTO}</code>\n<b>Target users :</b> <code>{COUNT}</code>\n\n<b>Are you sure?</b>" , reply_markup=KEYBOARD_YES_NO_SIMPLE , parse_mode=enums.ParseMode.HTML)
+                        await WAIT.delete()
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID , f"protocol | confirm {ADMIN} {GROUP} {ACTION} {PROTO}")
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick a protocol from the list.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+                # Step D: confirm + apply
+                elif CHECK_STEP.startswith("protocol | confirm ") :
+                    if MESSAGE_TEXT == "✅ YES , sure!" :
+                        PARTS = CHECK_STEP[len("protocol | confirm "):].strip().split(" ", 3)
+                        ADMIN, GROUP, ACTION, PROTO = PARTS[0], PARTS[1], PARTS[2], PARTS[3]
+                        STATUSES = {"active_onhold": ("active","on_hold"), "expired": ("expired",), "limited": ("limited",)}[GROUP]
+                        ADMIN_ARG = None if ADMIN == "*all*" else ADMIN
+                        PROTOS = await asyncio.to_thread(DEF_PROTOCOLS, MESSAGE_CHATID)
+                        TAGS = PROTOS.get(PROTO, [])
+                        WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ applying... this may take a while.</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                        OK, FAIL, SKIPPED = await DEF_RUN_PROGRESS(client, MESSAGE_CHATID, WAIT, DEF_PROTOCOL_APPLY, MESSAGE_CHATID, PROTO, TAGS, ACTION, STATUSES, ADMIN_ARG)
+                        done_txt = "added" if ACTION == "add" else "removed"
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>✅ Done</b>\n\n<b>Protocol <code>{PROTO}</code> {done_txt}.</b>\n<b>✅ Success :</b> <code>{OK}</code>\n<b>⏭ Skipped (already had it) :</b> <code>{SKIPPED}</code>\n<b>❌ Failed :</b> <code>{FAIL}</code>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        await WAIT.delete()
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Cancelled.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+
+            elif CHECK_STEP.startswith("date") :
+                # Step A: pick admin
+                if CHECK_STEP == "date | select admin" :
+                    if MESSAGE_TEXT.startswith("dateadmin: ") :
+                        ADMIN = MESSAGE_TEXT[len("dateadmin: "):].strip()
+                        WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ counting time-unlimited users...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                        COUNT = await asyncio.to_thread(DEF_GIVE_DATE_COUNT, MESSAGE_CHATID, ADMIN)
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>📅 Admin <code>{ADMIN}</code> has <code>{COUNT}</code> time-unlimited users.\n\n🔢 How many days to give them? (send a number)</b>" , reply_markup=KEYBOARD_CANCEL , parse_mode=enums.ParseMode.HTML)
+                        await WAIT.delete()
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID , f"date | days {ADMIN}")
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick an admin.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+                # Step B: enter days + apply
+                elif CHECK_STEP.startswith("date | days ") :
+                    ADMIN = CHECK_STEP[len("date | days "):].strip()
+                    if not MESSAGE_TEXT.strip().isdigit() :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please send a number (days).</b>" , reply_markup=KEYBOARD_CANCEL , parse_mode=enums.ParseMode.HTML)
+                    else :
+                        DAYS = int(MESSAGE_TEXT.strip())
+                        WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ applying dates...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                        OK, FAIL, SKIPPED = await DEF_RUN_PROGRESS(client, MESSAGE_CHATID, WAIT, DEF_GIVE_DATE_APPLY, MESSAGE_CHATID, ADMIN, DAYS)
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>✅ Done</b>\n\n<b>Gave <code>{DAYS}</code> days to time-unlimited users of <code>{ADMIN}</code>.</b>\n<b>✅ Success :</b> <code>{OK}</code>\n<b>⏭ Skipped (already had date) :</b> <code>{SKIPPED}</code>\n<b>❌ Failed :</b> <code>{FAIL}</code>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        await WAIT.delete()
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+
+            elif CHECK_STEP.startswith("unlimited") :
+                if CHECK_STEP == "unlimited | select admin" :
+                    if MESSAGE_TEXT == "🌐 All admins" :
+                        ADMIN_ARG = None
+                        admin_txt = "All admins"
+                    elif MESSAGE_TEXT.startswith("unladmin: ") :
+                        ADMIN_ARG = MESSAGE_TEXT[len("unladmin: "):].strip()
+                        admin_txt = ADMIN_ARG
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="<b>❌ Please pick an admin.</b>" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                        UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+                        return
+                    WAIT = await client.send_message(chat_id=MESSAGE_CHATID, text="<b>⏳️ searching...</b>", reply_markup=ReplyKeyboardRemove(), parse_mode=enums.ParseMode.HTML)
+                    TIME_UNL, DATA_UNL = await asyncio.to_thread(DEF_FIND_UNLIMITED, MESSAGE_CHATID, ADMIN_ARG)
+                    def _fmt(lst):
+                        if not lst:
+                            return "—"
+                        shown = lst[:50]
+                        txt = "\n".join(f"• {n}" for n in shown)
+                        if len(lst) > 50:
+                            txt += f"\n... (+{len(lst)-50} more)"
+                        return txt
+                    TEXT = (f"<b>♾ Unlimited users — {admin_txt}</b>\n\n"
+                            f"<b>🕰 Time-unlimited (no expire): {len(TIME_UNL)}</b>\n{_fmt(TIME_UNL)}\n\n"
+                            f"<b>📊 Data-unlimited (no limit): {len(DATA_UNL)}</b>\n{_fmt(DATA_UNL)}")
+                    await client.send_message(chat_id=MESSAGE_CHATID , text=TEXT , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                    await WAIT.delete()
+                    UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
+
+
+            elif CHECK_STEP.startswith("reset") :
+                if CHECK_STEP == "reset | toggle" :
+                    if MESSAGE_TEXT in ("🟢 Enable reset alert", "🔴 Disable reset alert") :
+                        NEW = DEF_RESET_ALERT_TOGGLE()
+                        emoji = "🟢 on" if NEW == "on" else "🔴 off"
+                        extra = "\n\n<b>First cycle builds a baseline; alerts start from the next check.</b>" if NEW == "on" else ""
+                        await client.send_message(chat_id=MESSAGE_CHATID , text=f"<b>🔄 Reset alert is now {emoji}</b>{extra}" , reply_markup=KEYBOARD_HOME , parse_mode=enums.ParseMode.HTML)
+                    else :
+                        await client.send_message(chat_id=MESSAGE_CHATID , text="🏛" , reply_markup=KEYBOARD_HOME)
                     UPDATE_STEP = DEF_UPDATE_STEP(MESSAGE_CHATID,"None")
 
 

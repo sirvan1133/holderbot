@@ -6,10 +6,83 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 KEYBOARD_HOME = ReplyKeyboardMarkup([[KeyboardButton("🚀 Create User"),KeyboardButton("🎖 Notice")],
     [KeyboardButton("👤 Users"), KeyboardButton("👨🏻‍💻 Admins"), KeyboardButton("🎗 Nodes")],
     [KeyboardButton("🗃 Templates"),KeyboardButton("🎛 Monitoring")],
+    [KeyboardButton("💰 Billing"), KeyboardButton("🛠 Protocol"), KeyboardButton("🔄 Reset Alert")],
+    [KeyboardButton("📅 Give Date"), KeyboardButton("♾ Unlimited")],
     [KeyboardButton("🔍 Search"), KeyboardButton("💬 Help"), KeyboardButton("🖼 QR Code")]], resize_keyboard=True)
 
 
 KEYBOARD_CANCEL = ReplyKeyboardMarkup([[KeyboardButton("🔙 cancel")]] , resize_keyboard=True)
+
+
+# --- Billing: list admins as buttons ---
+def KEYBOARD_BILLING_ADMINS(CHATID):
+    from Function.myfeatures import DEF_BILLING_ADMINS
+    rows = []
+    for name in DEF_BILLING_ADMINS(CHATID):
+        rows.append([KeyboardButton(f"bill: {name}")])
+    rows.append([KeyboardButton("🔙 cancel")])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True)
+
+
+# --- Protocol step 1: pick admin ---
+def KEYBOARD_PROTO_ADMINS(CHATID):
+    from Function.myfeatures import DEF_BILLING_ADMINS
+    rows = [[KeyboardButton("🌐 All admins")]]
+    for name in DEF_BILLING_ADMINS(CHATID):
+        rows.append([KeyboardButton(f"padmin: {name}")])
+    rows.append([KeyboardButton("🔙 cancel")])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True)
+
+
+# --- Protocol step 2: pick group ---
+KEYBOARD_PROTO_GROUP = ReplyKeyboardMarkup([
+    [KeyboardButton("🟢 Active + OnHold")],
+    [KeyboardButton("🕰 Expired"), KeyboardButton("🪫 Limited")],
+    [KeyboardButton("🔙 cancel")]], resize_keyboard=True)
+
+
+# --- Protocol step 3: list protocols with add/remove ---
+def KEYBOARD_PROTOCOLS(CHATID):
+    from Function.myfeatures import DEF_PROTOCOLS
+    protos = DEF_PROTOCOLS(CHATID)
+    rows = []
+    for proto in protos:
+        rows.append([KeyboardButton(f"➕ proto: {proto}"), KeyboardButton(f"➖ proto: {proto}")])
+    rows.append([KeyboardButton("🔙 cancel")])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True), protos
+
+
+# --- Give Date: list admins ---
+def KEYBOARD_DATE_ADMINS(CHATID):
+    from Function.myfeatures import DEF_BILLING_ADMINS
+    rows = []
+    for name in DEF_BILLING_ADMINS(CHATID):
+        rows.append([KeyboardButton(f"dateadmin: {name}")])
+    rows.append([KeyboardButton("🔙 cancel")])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True)
+
+
+# --- Unlimited finder: list admins (with all option) ---
+def KEYBOARD_UNLIMITED_ADMINS(CHATID):
+    from Function.myfeatures import DEF_BILLING_ADMINS
+    rows = [[KeyboardButton("🌐 All admins")]]
+    for name in DEF_BILLING_ADMINS(CHATID):
+        rows.append([KeyboardButton(f"unladmin: {name}")])
+    rows.append([KeyboardButton("🔙 cancel")])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True)
+
+
+# --- Reset alert on/off ---
+def KEYBOARD_RESET_ALERT(STATUS):
+    if STATUS == "on":
+        btn = KeyboardButton("🔴 Disable reset alert")
+    else:
+        btn = KeyboardButton("🟢 Enable reset alert")
+    return ReplyKeyboardMarkup([[btn], [KeyboardButton("🔙 cancel")]], resize_keyboard=True)
+
+
+KEYBOARD_YES_NO_SIMPLE = ReplyKeyboardMarkup([[KeyboardButton("✅ YES , sure!"), KeyboardButton("❌ NO ,forget.")],
+    [KeyboardButton("🔙 cancel")]], resize_keyboard=True)
 
 
 def KEYBOARD_ADMINS_LIST(CHATID) :
